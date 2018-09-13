@@ -1,7 +1,9 @@
 import numpy as np
 import torch
 import argparse
-import troch.utils.data
+import torch.utils.data
+
+from vaeinput import VAEInput
 
 from torch import nn
 from torch import optim
@@ -29,11 +31,11 @@ device = torch.device("cpu")
 
 # load data 
 train_loader = torch.utils.data.DataLoader(
-    VAEData('Data/', 'train', transform=transforms.ToTensor()),
+    VAEInput('Data/', 'train', transform=transforms.ToTensor()),
     batch_size=args.batch_size, shuffle=True, **kwargs
 )
 test_loader = torch.utils.data.DataLoader(
-    VAEData('Data/', 'test', transform=transforms.ToTensor()),
+    VAEInput('Data/', 'test', transform=transforms.ToTensor()),
     batch_size=args.batch_size, shuffle=True, **kwargs
 )
 
