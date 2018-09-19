@@ -31,28 +31,37 @@ device = torch.device("cpu")
 
 # load data 
 train_loader = torch.utils.data.DataLoader(
-    VAEInput('Data/', 'train', transform=transforms.ToTensor()),
+    VAEInput('VAE/Data/', 'train', transform=transforms.ToTensor()),
     batch_size=args.batch_size, shuffle=True, **kwargs
 )
 test_loader = torch.utils.data.DataLoader(
-    VAEInput('Data/', 'test', transform=transforms.ToTensor()),
+    VAEInput('VAE/Data/', 'test', transform=transforms.ToTensor()),
     batch_size=args.batch_size, shuffle=True, **kwargs
 )
 
 class VAE(nn.Module):
+
+    # Initialize all the vectors 
     def __init__(self, ):
         super(VAE, self).__init__()
 
+        # Encode 28 * 28 vector to 1 * 400 vector
         self.fc1 = nn.Linear(784, 400)
+
+        # Encode to latent vector 
         self.fc21 = nn.Linear(400, 20)
         self.fc22 = nn.Linear(400, 20)
+
+        # decode process
         self.fc3 = nn.Linear(20, 400)
         self.fc4 = nn.Linear(400, 784)
 
+    # Encode to the hidden layer to get the latent model parameter, mu and esilon
     def encode(self, x):
         h1 = F.relu(self.fc1) # rectified linear unit
         return self.fc21(h1), self.fc22(h1)
 
+    # Calculate the latent vector, move the random sampling out of the layer to faciliate back propogation
     def reparameterize(self, mu, logvar):
         if self.training:
             std = torch.exp(0.5*logvar)
@@ -61,18 +70,21 @@ class VAE(nn.Module):
         else:
             return mu
 
+    # Decode latent vector back to vector that are similar to input 
     def decode(self, z):
         h3 = F.relu(self.fc3(z))
         return F.sigmoid(self.fc4(h3))
 
+    # Model moving forward process
     def forward(self, x):
         mu, logvar = self.encode(x.view(-1, 784))
         z = self.reparameterize(mu, logvar)
         return self.decode(z), mu. logvar
 
 model = VAE().to(device)
-optimizer = optim.Adam(model.parameters, lr=1e-3)
+optimizer = optim.Adam(model.parameters, lr=1e-3) # lr stands for learning rate
 
+# loss function for basic Variational Autoencoder
 def loss_function(recon_x, x, mu, logvar):
     BCE = F.binary_cross_entropy(recon_x, x.view(-1, 784), size_average=False)
 
@@ -80,6 +92,7 @@ def loss_function(recon_x, x, mu, logvar):
 
     return BCE + KLD
 
+# Model training process
 def train(epoch):
     model.train()
     train_loss = 0
@@ -121,7 +134,7 @@ def test(epoch):
     test_loss /= len(test_loader.dataset)
     print('==> Test set loss: {:.4f}'.format(test_loss))
 
-
+# Going through for multiple epoches to improve the performance
 for epoch in range(1, args.epoch+1):
     train(epoch)
     test(epoch)
