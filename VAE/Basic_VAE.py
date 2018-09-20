@@ -31,11 +31,11 @@ device = torch.device("cpu")
 
 # load data 
 train_loader = torch.utils.data.DataLoader(
-    VAEInput('VAE/Data/', 'train', transform=transforms.ToTensor()),
+    VAEInput('/Users/dingfan/FinalYearProject/VAE/Data/', 'train', transform=transforms.ToTensor()),
     batch_size=args.batch_size, shuffle=True, **kwargs
 )
 test_loader = torch.utils.data.DataLoader(
-    VAEInput('VAE/Data/', 'test', transform=transforms.ToTensor()),
+    VAEInput('/Users/dingfan/FinalYearProject/VAE/Data/', 'test', transform=transforms.ToTensor()),
     batch_size=args.batch_size, shuffle=True, **kwargs
 )
 
