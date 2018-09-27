@@ -3,7 +3,7 @@ import torch
 import argparse
 import torch.utils.data
 
-from vaeinput import VAEInput
+from Vae_Input import VAEInput
 
 from torch import nn
 from torch import optim
