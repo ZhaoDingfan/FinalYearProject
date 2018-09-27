@@ -20,15 +20,18 @@ class VAEInput(Dataset):
         #     drawings = torch.load(os.path.join(data_folder, file_name))
         #     for drawing in drawings:
         #         self.drawings.append((drawing, category))
+        
         for data_file in data_files:
-            splitted = data_file.split('.')
-            data_filenames[splitted[0]] = data_file
+            splitted = data_file.split('_')
+            if splitted[1] == mode:
+                # make it under category of cat
+                data_filenames[splitted[0]] = data_file
         
         self.drawings = []
         for category, file_name in data_filenames.items():
             drawings = torch.load(os.path.join(data_folder, file_name))
             for drawing in drawings:
-                self.drawings.append((drawing["drawing"], category))
+                self.drawings.append((drawing, category))
     
     def __len__(self):
         return len(self.drawings)
