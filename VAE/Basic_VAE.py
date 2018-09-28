@@ -32,11 +32,12 @@ device = torch.device("cpu")
 # load data 
 train_loader = torch.utils.data.DataLoader(
     VAEInput('/Users/dingfan/FinalYearProject/VAE/Data/', 'train', transform=transforms.ToTensor()),
-    batch_size=args.batch_size, shuffle=True, **kwargs
+    batch_size=args.batch_size, shuffle=True
 )
+
 test_loader = torch.utils.data.DataLoader(
     VAEInput('/Users/dingfan/FinalYearProject/VAE/Data/', 'test', transform=transforms.ToTensor()),
-    batch_size=args.batch_size, shuffle=True, **kwargs
+    batch_size=args.batch_size, shuffle=True
 )
 
 class VAE(nn.Module):
@@ -58,7 +59,7 @@ class VAE(nn.Module):
 
     # Encode to the hidden layer to get the latent model parameter, mu and esilon
     def encode(self, x):
-        h1 = F.relu(self.fc1) # rectified linear unit
+        h1 = F.relu(self.fc1(x)) # rectified linear unit
         return self.fc21(h1), self.fc22(h1)
 
     # Calculate the latent vector, move the random sampling out of the layer to faciliate back propogation
@@ -79,10 +80,10 @@ class VAE(nn.Module):
     def forward(self, x):
         mu, logvar = self.encode(x.view(-1, 784))
         z = self.reparameterize(mu, logvar)
-        return self.decode(z), mu. logvar
+        return self.decode(z), mu, logvar
 
 model = VAE().to(device)
-optimizer = optim.Adam(model.parameters, lr=1e-3) # lr stands for learning rate
+optimizer = optim.Adam(model.parameters(), lr=1e-3) # lr stands for learning rate
 
 # loss function for basic Variational Autoencoder
 def loss_function(recon_x, x, mu, logvar):
@@ -108,8 +109,8 @@ def train(epoch):
         # log after one log_interval to check the detailed loss information 
         if batch_index % args.log_interval == 0:
             print('Train Epoch: {} [{}/{} ({:.0f}%)]\tLoss: {:.6f}'.format(
-                epoch, batch_idx * len(data), len(train_loader.dataset),
-                100. * batch_idx / len(train_loader),
+                epoch, batch_index * len(data), len(train_loader.dataset),
+                100. * batch_index / len(train_loader),
                 loss.item() / len(data)))
 
     # log after each epoch
@@ -129,19 +130,19 @@ def test(epoch):
             if i == 0:
                 n = min(data.size(0), 8)
                 comparison = torch.cat([data[:n], recon_batch.view(args.batch_size, 1, 28, 28)[:n]])
-                save_image(comparison.cpu(), 'results/recon_' + str(epoch) + '.png', nrow=n)
+                save_image(comparison.cpu(), '/Users/dingfan/FinalYearProject/VAE/Results/recon_' + str(epoch) + '.png', nrow=n)
 
     test_loss /= len(test_loader.dataset)
     print('==> Test set loss: {:.4f}'.format(test_loss))
 
 # Going through for multiple epoches to improve the performance
-for epoch in range(1, args.epoch+1):
+for epoch in range(1, args.epochs+1):
     train(epoch)
     test(epoch)
     with torch.no_grad():
-        sample = troch.randn(64, 20).to(device)
+        sample = torch.randn(64, 20).to(device)
         sample = model.decode(sample).cpu()
-        save_image(sample.view(64, 1, 28, 28), 'results/sample_' + str(epoch) + '.png')
+        save_image(sample.view(64, 1, 28, 28), '/Users/dingfan/FinalYearProject/VAE/Results/sample_' + str(epoch) + '.png')
 
 
 

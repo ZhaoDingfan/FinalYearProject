@@ -5,9 +5,9 @@ import numpy as np
 import json
 
 # should in 28 * 28
-RAW_BITMAP_CAT_PATH = 'Data/bitmap_cat.npy'
-BITMAP_CAT_TRAIN_PATH = 'Data/cat_train_set'
-BITMAP_CAT_TEST_PATH = 'Data/cat_test_set'
+RAW_BITMAP_CAT_PATH = '/Users/dingfan/FinalYearProject/VAE/Data/bitmap_cat.npy'
+BITMAP_CAT_TRAIN_PATH = '/Users/dingfan/FinalYearProject/VAE/Data/cat_train_set'
+BITMAP_CAT_TEST_PATH = '/Users/dingfan/FinalYearProject/VAE/Data/cat_test_set'
 
 NUM_TRAIN = 5000
 NUM_TEST = 5000

@@ -10,6 +10,7 @@ class VAEInput(Dataset):
         self.transform = transform
         data_files = os.listdir(data_folder)
         data_filenames = {}
+        
         # for data_file in data_files:
         #     splitted = data_file.split('_')
         #     if splitted[1] == mode + '.pt':
