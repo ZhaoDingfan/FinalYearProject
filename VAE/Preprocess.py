@@ -19,7 +19,13 @@ def preprocess():
     torch.save(bitmap[:NUM_TRAIN], open(BITMAP_CAT_TRAIN_PATH, 'wb'))
     torch.save(bitmap[NUM_TRAIN:NUM_TRAIN+NUM_TEST], open(BITMAP_CAT_TEST_PATH, 'wb'))
 
-preprocess()
+# preprocess()
+
+def preprocess_cvae():
+    bitmap = np.load(RAW_BITMAP_CAT_PATH)
+
+    # Then append the classified class to the preprocessed dataset
+    cat_class = 1
 
 
 
