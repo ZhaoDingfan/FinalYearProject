@@ -13,6 +13,8 @@ from torch import nn
 from torch import optim
 from sklearn.preprocessing import LabelBinarizer
 
+device = torch.device("cpu")
+
 parser = argparse.ArgumentParser(description='VAE Implementation')
 parser.add_argument('--batch-size', type=int, default=128, metavar='N',
                     help='input batch size for training (default: 128)')
@@ -25,6 +27,17 @@ parser.add_argument('--seed', type=int, default=1, metavar='S',
 parser.add_argument('--log-interval', type=int, default=10, metavar='N',
                     help='how many batches to wait before logging training status')
 args = parser.parse_args()
+
+# It shares the same trainer loader and test loader with basic VAE
+train_loader = torch.utils.data.DataLoader(
+    VAEInput('/Users/dingfan/FinalYearProject/VAE/Data/', 'train', transform=transforms.ToTensor()),
+    batch_size=args.batch_size, shuffle=True
+)
+
+test_loader = torch.utils.data.DataLoader(
+    VAEInput('/Users/dingfan/FinalYearProject/VAE/Data/', 'test', transform=transforms.ToTensor()),
+    batch_size=args.batch_size, shuffle=True
+)
 
 class CVAE(nn.Module):
     # Initialise the class
@@ -97,14 +110,44 @@ class CVAE(nn.Module):
         mu, logvar = self.encode(x.view(-1, self.feature_size), c)
         z = self.reparameterize(mu, logvar)
         return self.decode(z, c), mu, logvar
-    
-def train():
 
+model = CVAE.to(device)
+optimizer = optim.Adam(model.parameters(), lr=1e-3) # lr stands for learning rate
+
+def train():
+    # Function to train my model
+    model.train()
+    train_loss = 0
+    for batch_index, (data, _) in enumerate(train_loader):
+        data = data.to(device)
+
+        # It will also attach the one-hot label to the end of original data 
+        
+        optimizer.zero_grad()
+        recon_batch, mu, logvar = model(data)
+        loss = loss_function(recon_batch, data, mu, logvar)
+        loss.backward()
+        train_loss += loss.item()
+        optimizer.step()
+        
+        # log after one log_interval to check the detailed loss information 
+        if batch_index % args.log_interval == 0:
+            print('Train Epoch: {} [{}/{} ({:.0f}%)]\tLoss: {:.6f}'.format(
+                epoch, batch_index * len(data), len(train_loader.dataset),
+                100. * batch_index / len(train_loader),
+                loss.item() / len(data)))
+
+    # log after each epoch
+    print('==> Epoch: {} Average Loss: {:.4f}'.format(
+        epoch, train_loss / len(train_loader.dataset)
+    ))
 
 def test():
-
+    # Function to test my model
 
 def loss_function():
 
 
 for epoch in range(0, epochs):
+    train(epoch)
+    test(epoch)
