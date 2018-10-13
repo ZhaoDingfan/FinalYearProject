@@ -122,7 +122,8 @@ def train():
         data = data.to(device)
 
         # It will also attach the one-hot label to the end of original data 
-        
+        label = 
+
         optimizer.zero_grad()
         recon_batch, mu, logvar = model(data)
         loss = loss_function(recon_batch, data, mu, logvar)
