@@ -89,7 +89,8 @@ class CVAE(nn.Module):
         # return floatTensor
         targets = torch.zeros(len(label_raw), self.class_size)
         for i, label in enumerate(label_raw):
-            targets[i, label_map[label_raw]] = 1
+            # if label in label_map:
+            targets[i, label_map[label]] = 1
         
         return targets
         
@@ -147,7 +148,7 @@ def train(epoch):
         con = torch.cat((flat_data, label), 1)
 
         optimizer.zero_grad()
-        recon_batch, mu, logvar = model(label)
+        recon_batch, mu, logvar = model(data, label)
         loss = loss_function(recon_batch, con, mu, logvar)
         loss.backward()
         train_loss += loss.item()
@@ -173,6 +174,7 @@ def test(epoch):
 
     with torch.no_grad():
         for i, (data, label) in enumerate(test_loader):
+            # print("label: " + label)
             data = data.to(device)
             recon_batch, mu, logvar = model(data, label)
             
