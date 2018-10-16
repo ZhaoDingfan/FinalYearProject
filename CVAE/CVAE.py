@@ -14,8 +14,10 @@ from torch import nn
 from torch import optim
 from sklearn.preprocessing import LabelBinarizer
 from torchvision import transforms
+from torchvision.utils import save_image
 from Vae_Input import VAEInput
 from label import labels 
+
 
 label_raw = labels
 print(label_raw)
@@ -57,7 +59,7 @@ class CVAE(nn.Module):
 
         # Every category has one kind of class_size for distinguishment. 
         # We will use one-hot encoding 
-        self.class_size = 10
+        self.class_size = 3
 
         # input layer
         self.fc1 = nn.Linear(self.feature_size + self.class_size, self.hidden_layer_size)
@@ -77,7 +79,7 @@ class CVAE(nn.Module):
 
     # encode the category using one hot encoding to make it as the same class size with other categories 
     # while still being unique
-    def convert_category(self, c: torch.FloatTensor):
+    def convert_label(self, c: torch.FloatTensor):
         c_n = c.numpy()
         self.lb.fit(list(range(0, self.class_size)))
 
@@ -121,19 +123,26 @@ class CVAE(nn.Module):
 model = CVAE().to(device)
 optimizer = optim.Adam(model.parameters(), lr=1e-3) # lr stands for learning rate
 
-def train():
+def loss_function(recon_x, x, mu, logvar):
+    BCE = F.binary_cross_entropy(recon_x, x.view(-1, 784), size_average=False)
+    KLD = -0.5 * torch.sum(1 + logvar - mu.pow(2) - logvar.exp())
+    return BCE + KLD
+
+def train(epoch):
     # Function to train my model
     model.train()
     train_loss = 0
     for batch_index, (data, label)  in enumerate(train_loader):
         data = data.to(device)
 
-        # It will also attach the one-hot label to the end of original data 
-        label = model.convert_category(data)
+        # It will also attach the one-hot label to the end of every input vector 
+        label = model.convert_label(data)
+        flat_data = data.view(-1, data.shape[2]*data.shape[3])
+        con = torch.cat((flat_data, label), 1)
 
         optimizer.zero_grad()
         recon_batch, mu, logvar = model(label)
-        loss = loss_function(recon_batch, data, mu, logvar)
+        loss = loss_function(recon_batch, con, mu, logvar)
         loss.backward()
         train_loss += loss.item()
         optimizer.step()
@@ -150,13 +159,52 @@ def train():
         epoch, train_loss / len(train_loader.dataset)
     ))
 
-def test():
-    # Function to test my model
-    print("test")
+# During test mode, it will not require the encoder module as it will only touch the latent vector
+# and generate reconstructed image
+def test(epoch):
+    model.eval()
+    test_loss = 0
 
-def loss_function():
-    print("loss")
+    with torch.no_grad():
+        for i, (data, label) in enumerate(test_loader):
+            data = data.to(device)
+            recon_batch, mu, logvar = model(data, label)
+            
+            flat_data = data.view(-1, data.shape[2]*data.shape[3])
+            
+            y_condition = model.convert_label(label)
+            con = torch.cat((flat_data, y_condition), 1)
+            test_loss += loss_function(recon_batch, con, mu, logvar).item()
+
+            if i == 0:
+                n = min(data.size(0), 8)
+                # recon_image = recon_batch[:, 0:recon_batch.shape[1]-10]
+                # print(recon_image.shape)
+                # recon_image = recon_image.view(BATCH_SIZE, 1, 28,28)
+                comparison = torch.cat([data[:n], recon_batch.view(args.batch_size, 1, 28, 28)[:n]])
+                # print('---',recon_image.shape)
+                # comparison = torch.cat([data[:n],
+                #                       recon_image.view(BATCH_SIZE, 1, 28, 28)[:n]])
+                save_image(comparison.cpu(), 'results/reconstruction_' + str(epoch) + '.png', nrow=n)
+
+    test_loss /= len(test_loader.dataset)
+    print('====> Test set loss: {:.4f}'.format(test_loss))
 
 for epoch in range(args.epochs):
     train(epoch)
     test(epoch)
+    with torch.no_grad():
+        # sampling process 
+        sample = torch.randn(64, 20).to(device)
+      
+        c = np.zeros(shape=(sample.shape[0],))
+        rand = np.random.randint(0, 10)
+        # print(f"Random number: {rand}")
+        c[:] = rand
+        c = torch.FloatTensor(c)
+        sample = model.decode(sample, c).cpu()
+
+        # Delete the one-hot label and generate the final result
+        generated_image = sample[:, 0:sample.shape[1]-10]
+        
+        save_image(generated_image.view(64, 1, 28, 28), 'results/sample_' + str(epoch) + '.png')
