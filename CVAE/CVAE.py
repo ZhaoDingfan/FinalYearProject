@@ -19,8 +19,10 @@ from Vae_Input import VAEInput
 from label import labels 
 
 
-label_raw = labels
-print(label_raw)
+# label = labels
+# print(label_raw)
+label_map = labels
+print(label_map)
 
 device = torch.device("cpu")
 
@@ -57,9 +59,9 @@ class CVAE(nn.Module):
         self.hidden_layer_size = 400
         self.latent_size = 20
 
-        # Every category has one kind of class_size for distinguishment. 
+        # Every category has one allocated class for distinguishment. 10 classes in total for maximum 
         # We will use one-hot encoding 
-        self.class_size = 3
+        self.class_size = 10
 
         # input layer
         self.fc1 = nn.Linear(self.feature_size + self.class_size, self.hidden_layer_size)
@@ -79,16 +81,20 @@ class CVAE(nn.Module):
 
     # encode the category using one hot encoding to make it as the same class size with other categories 
     # while still being unique
-    def convert_label(self, c: torch.FloatTensor):
-        c_n = c.numpy()
-        self.lb.fit(list(range(0, self.class_size)))
-
-        c_one_hot = self.lb.transform(c_n)
-        floatTensor = torch.FloatTensor(c_one_hot)
-        return floatTensor
+    def convert_label(self, label_raw):
+        # c_n = c.numpy()
+        # self.lb.fit(list(range(0, self.class_size)))
+        # c_one_hot = self.lb.transform(c_n)
+        # floatTensor = torch.FloatTensor(c_one_hot)
+        # return floatTensor
+        targets = torch.zeros(len(label_raw), self.class_size)
+        for i, label in enumerate(label_raw):
+            targets[i, label_map[label_raw]] = 1
+        
+        return targets
         
     def encode(self, x, c):
-        category = self.convert_category(c)
+        category = self.convert_label(c)
 
         # concatenate one hot encoding with input feature size
         con = torch.cat((x, category), 1)
@@ -98,7 +104,7 @@ class CVAE(nn.Module):
         return self.fc21(h1), self.fc22(h1)
 
     def decode(self, z, c):
-        category = self.convert_category(c)
+        category = self.convert_label(c)
 
         # When we decode, we also have to concatenate latent vector with category
         con = torch.cat((z, category), 1)
@@ -136,7 +142,7 @@ def train(epoch):
         data = data.to(device)
 
         # It will also attach the one-hot label to the end of every input vector 
-        label = model.convert_label(data)
+        label = model.convert_label(label)
         flat_data = data.view(-1, data.shape[2]*data.shape[3])
         con = torch.cat((flat_data, label), 1)
 
@@ -173,6 +179,7 @@ def test(epoch):
             flat_data = data.view(-1, data.shape[2]*data.shape[3])
             
             y_condition = model.convert_label(label)
+            # label = model.convert_label(label, len(label_map))
             con = torch.cat((flat_data, y_condition), 1)
             test_loss += loss_function(recon_batch, con, mu, logvar).item()
 
