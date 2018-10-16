@@ -4,6 +4,7 @@
 
 # Thanks for the help from Zhuohan
 
+import os
 import numpy as np
 import torch
 import argparse
@@ -12,6 +13,12 @@ import torch.nn.functional as F
 from torch import nn
 from torch import optim
 from sklearn.preprocessing import LabelBinarizer
+from torchvision import transforms
+from Vae_Input import VAEInput
+from label import labels 
+
+label_raw = labels
+print(label_raw)
 
 device = torch.device("cpu")
 
@@ -111,21 +118,21 @@ class CVAE(nn.Module):
         z = self.reparameterize(mu, logvar)
         return self.decode(z, c), mu, logvar
 
-model = CVAE.to(device)
+model = CVAE().to(device)
 optimizer = optim.Adam(model.parameters(), lr=1e-3) # lr stands for learning rate
 
 def train():
     # Function to train my model
     model.train()
     train_loss = 0
-    for batch_index, (data, _) in enumerate(train_loader):
+    for batch_index, (data, label)  in enumerate(train_loader):
         data = data.to(device)
 
         # It will also attach the one-hot label to the end of original data 
-        label = 
+        label = model.convert_category(data)
 
         optimizer.zero_grad()
-        recon_batch, mu, logvar = model(data)
+        recon_batch, mu, logvar = model(label)
         loss = loss_function(recon_batch, data, mu, logvar)
         loss.backward()
         train_loss += loss.item()
@@ -145,10 +152,11 @@ def train():
 
 def test():
     # Function to test my model
+    print("test")
 
 def loss_function():
+    print("loss")
 
-
-for epoch in range(0, epochs):
+for epoch in range(args.epochs):
     train(epoch)
     test(epoch)

@@ -1,0 +1,1 @@
+labels = {"cat": 1, "dog": 2}
