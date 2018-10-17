@@ -29,7 +29,7 @@ device = torch.device("cpu")
 parser = argparse.ArgumentParser(description='VAE Implementation')
 parser.add_argument('--batch-size', type=int, default=128, metavar='N',
                     help='input batch size for training (default: 128)')
-parser.add_argument('--epochs', type=int, default=10, metavar='N',
+parser.add_argument('--epochs', type=int, default=50, metavar='N',
                     help='number of epochs to train (default: 10)')
 parser.add_argument('--no-cuda', action='store_true', default=False,
                     help='enables CUDA training')
@@ -53,7 +53,7 @@ test_loader = torch.utils.data.DataLoader(
 class CVAE(nn.Module):
     # Initialise the class
     # This round of implementation will make it more parameterized 
-    def __init__(self, ):
+    def __init__(self):
         super(CVAE, self).__init__()
         self.feature_size = 784
         self.hidden_layer_size = 400
@@ -91,11 +91,10 @@ class CVAE(nn.Module):
         for i, label in enumerate(label_raw):
             # if label in label_map:
             targets[i, label_map[label]] = 1
-        
         return targets
         
     def encode(self, x, c):
-        category = self.convert_label(c)
+        category = c
 
         # concatenate one hot encoding with input feature size
         con = torch.cat((x, category), 1)
@@ -105,7 +104,7 @@ class CVAE(nn.Module):
         return self.fc21(h1), self.fc22(h1)
 
     def decode(self, z, c):
-        category = self.convert_label(c)
+        category = c
 
         # When we decode, we also have to concatenate latent vector with category
         con = torch.cat((z, category), 1)
@@ -131,7 +130,7 @@ model = CVAE().to(device)
 optimizer = optim.Adam(model.parameters(), lr=1e-3) # lr stands for learning rate
 
 def loss_function(recon_x, x, mu, logvar):
-    BCE = F.binary_cross_entropy(recon_x, x.view(-1, 784), size_average=False)
+    BCE = F.binary_cross_entropy(recon_x, x[:, :784].view(-1, 784), size_average=False)
     KLD = -0.5 * torch.sum(1 + logvar - mu.pow(2) - logvar.exp())
     return BCE + KLD
 
@@ -139,7 +138,7 @@ def train(epoch):
     # Function to train my model
     model.train()
     train_loss = 0
-    for batch_index, (data, label)  in enumerate(train_loader):
+    for batch_index, (data, label) in enumerate(train_loader):
         data = data.to(device)
 
         # It will also attach the one-hot label to the end of every input vector 
@@ -176,12 +175,12 @@ def test(epoch):
         for i, (data, label) in enumerate(test_loader):
             # print("label: " + label)
             data = data.to(device)
-            recon_batch, mu, logvar = model(data, label)
             
             flat_data = data.view(-1, data.shape[2]*data.shape[3])
             
             y_condition = model.convert_label(label)
             # label = model.convert_label(label, len(label_map))
+            recon_batch, mu, logvar = model(data, y_condition)
             con = torch.cat((flat_data, y_condition), 1)
             test_loss += loss_function(recon_batch, con, mu, logvar).item()
 
@@ -194,7 +193,7 @@ def test(epoch):
                 # print('---',recon_image.shape)
                 # comparison = torch.cat([data[:n],
                 #                       recon_image.view(BATCH_SIZE, 1, 28, 28)[:n]])
-                save_image(comparison.cpu(), 'results/reconstruction_' + str(epoch) + '.png', nrow=n)
+                save_image(comparison.cpu(), '/Users/dingfan/FinalYearProject/CVAE/Results/reconstruction_' + str(epoch) + '.png', nrow=n)
 
     test_loss /= len(test_loader.dataset)
     print('====> Test set loss: {:.4f}'.format(test_loss))
@@ -205,15 +204,16 @@ for epoch in range(args.epochs):
     with torch.no_grad():
         # sampling process 
         sample = torch.randn(64, 20).to(device)
-      
-        c = np.zeros(shape=(sample.shape[0],))
-        rand = np.random.randint(0, 10)
-        # print(f"Random number: {rand}")
-        c[:] = rand
-        c = torch.FloatTensor(c)
+        # c = np.zeros(shape=(sample.shape[0]))
+        # rand = np.random.randint(0, 10)
+        # c[:] = rand
+        # c = torch.FloatTensor(c)
+        c = torch.randn(64, 10).to(device)
         sample = model.decode(sample, c).cpu()
+        print(sample.size())
 
         # Delete the one-hot label and generate the final result
-        generated_image = sample[:, 0:sample.shape[1]-10]
+        # Actually dont need to delete, it is already handled outside decode function 
+        generated_image = sample[:, 0:sample.shape[1]]
         
-        save_image(generated_image.view(64, 1, 28, 28), 'results/sample_' + str(epoch) + '.png')
+        save_image(generated_image.view(64, 1, 28, 28), '/Users/dingfan/FinalYearProject/CVAE/Results/sample_' + str(epoch) + '.png')

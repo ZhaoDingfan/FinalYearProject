@@ -1,1 +1,1 @@
-labels = {"cat": 1, "dog": 2, "tea":3}
+labels = {"cat": 1, "dog": 2, "ant":3}

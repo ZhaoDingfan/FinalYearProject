@@ -40,5 +40,4 @@ class VAEInput(Dataset):
     def __getitem__(self, idx): 
         return torch.tensor(
             np.reshape(np.multiply(self.drawings[idx][0], 1./255), (1, 28, 28)), 
-            dtype=torch.float
-            ), self.drawings[idx][1]
+            dtype=torch.float), self.drawings[idx][1]
