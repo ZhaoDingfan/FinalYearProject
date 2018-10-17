@@ -25,6 +25,8 @@ parser.add_argument('--seed', type=int, default=1, metavar='S',
                     help='random seed (default: 1)')
 parser.add_argument('--log-interval', type=int, default=10, metavar='N',
                     help='how many batches to wait before logging training status')
+parser.add_argument('--beta', default=4, type=float, 
+                    help='beta parameter for KL-term in original beta-VAE')
 args = parser.parse_args()
 args.cuda = not args.no_cuda and torch.cuda.is_available()
 
@@ -83,11 +85,11 @@ class BetaVAE(nn.Module):
 model = BetaVAE().to(device)
 optimizer = optim.Adam(model.parameters(), lr=1e-3)
 
-def loss_function(recon_x, x, mu, logvar):
+def loss_function(recon_x, x, mu, logvar, beta):
     BCE = F.binary_cross_entropy(recon_x, x.view(-1, 784), size_average=False)
     KLD = -0.5 * torch.sum(1 + logvar - mu.pow(2) - logvar.exp())
 
-    return BCE + KLD
+    return BCE + beta * KLD
 
 def train(epoch):
     model.train()
@@ -96,7 +98,7 @@ def train(epoch):
         data = data.to(device)
         optimizer.zero_grad()
         recon_batch, mu, logvar = model(data)
-        loss = loss_function(recon_batch, data, mu, logvar)
+        loss = loss_function(recon_batch, data, mu, logvar, args.beta)
         loss.backward()
         train_loss += loss.item()
         optimizer.step()
@@ -118,11 +120,12 @@ def test(epoch):
         for i, (data, _) in enumerate(test_loader):
             data = data.to(device)
             recon_batch, mu, logvar = model(data)
-            test_loss += loss_function(recon_batch, data, mu, logvar).item()
+            test_loss += loss_function(recon_batch, data, mu, logvar, args.beta).item()
             if i == 0:
                 n = min(data.size(0), 8)
                 # default batch size 128
-                comparison = torch.cat([data[:n]], recon_batch.view(args.batch_size, 1, 28, 28))
+                # comparison = torch.cat(([data[:n]], recon_batch.view(args.batch_size, 1, 28, 28)))
+                comparison = torch.cat([data[:n], recon_batch.view(args.batch_size, 1, 28, 28)[:n]])
                 save_image(comparison.cpu(), 
                     '/Users/dingfan/FinalYearProject/BETA_VAE/Results/recon_' + str(epoch) + '.png',
                 nrow= n)
@@ -136,9 +139,7 @@ for epoch in range(1, args.epochs+1):
     with torch.no_grad():
         sample = torch.randn(64, 20).to(device)
         sample = model.decode(sample).cpu()
-        save_image(sample.view(64, 1, 28, 28), 
         
         save_image(sample.view(64, 1, 28, 28), 
-            '/Users/dingfan/FinalYearProject/BETA_VAE/Results/sample_' + str(epoch) + '.png'
-        )
+            '/Users/dingfan/FinalYearProject/BETA_VAE/Results/sample_' + str(epoch) + '.png')
         
