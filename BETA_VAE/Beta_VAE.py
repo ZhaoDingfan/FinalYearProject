@@ -12,6 +12,7 @@ from torch.nn import functional as F
 from torchvision import datasets, transforms
 from torchvision.utils import save_image
 
+# Try to generate latent traversal
 
 # The preparation process is similar to normal VAE
 parser = argparse.ArgumentParser(description='VAE Implementation')
@@ -45,6 +46,7 @@ test_loader = torch.utils.data.DataLoader(
     batch_size=args.batch_size, shuffle=True
 )
 
+
 class BetaVAE(nn.Module):
     def __init__(self):
         super(BetaVAE, self).__init__()
@@ -59,6 +61,9 @@ class BetaVAE(nn.Module):
         # decode process
         self.fc3 = nn.Linear(20, 400)
         self.fc4 = nn.Linear(400, 784)
+
+        self.latent_vector = torch.zeros(args.batch_size, 20)
+        print(self.latent_vector.size())
 
     def encode(self, x):
         h1 = F.relu(self.fc1(x))
@@ -80,7 +85,9 @@ class BetaVAE(nn.Module):
     def forward(self, x):
         mu, logvar = self.encode(x.view(-1, 784))
         z = self.reparameterize(mu, logvar)
+        self.latent_vector = z
         return self.decode(z), mu, logvar
+
 
 model = BetaVAE().to(device)
 optimizer = optim.Adam(model.parameters(), lr=1e-3)
@@ -133,6 +140,24 @@ def test(epoch):
     test_loss /= len(test_loader.dataset)
     print('==> Test set loss: {:.4f}'.format(test_loss))
 
+# function to generate the latent traversal
+def generate_latent_traversal(latent):
+    
+    sample = torch.randn(160, 20)
+    for dimension in range(20):
+        val = -3
+        
+        for row in range(8):
+            new_row = latent[row].clone()
+            new_row[dimension] = val
+            sample[dimension*8+row] = new_row.clone()
+            val += 6/7
+   
+    sample = model.decode(sample).cpu()
+
+    save_image(sample.view(160, 1, 28, 28), 
+        '/Users/dingfan/FinalYearProject/BETA_VAE/Results/traversal_total' + str() + '.png')
+
 for epoch in range(1, args.epochs+1):
     train(epoch)
     test(epoch)
@@ -142,4 +167,10 @@ for epoch in range(1, args.epochs+1):
         
         save_image(sample.view(64, 1, 28, 28), 
             '/Users/dingfan/FinalYearProject/BETA_VAE/Results/sample_' + str(epoch) + '.png')
+    
+generate_latent_traversal(model.latent_vector)
+
+
+
+
         
