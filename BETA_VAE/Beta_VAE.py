@@ -13,6 +13,8 @@ from torchvision import datasets, transforms
 from torchvision.utils import save_image
 
 # Try to generate latent traversal
+# The latent traversal does not perform quite good on cat dataset although it performs well in the dot dataset. 
+# Hence I would like to try another implementation to find the disentanglement of cat. 
 
 # The preparation process is similar to normal VAE
 parser = argparse.ArgumentParser(description='VAE Implementation')
@@ -26,7 +28,7 @@ parser.add_argument('--seed', type=int, default=1, metavar='S',
                     help='random seed (default: 1)')
 parser.add_argument('--log-interval', type=int, default=10, metavar='N',
                     help='how many batches to wait before logging training status')
-parser.add_argument('--beta', default=4, type=float, 
+parser.add_argument('--beta', default=8, type=float, 
                     help='beta parameter for KL-term in original beta-VAE')
 args = parser.parse_args()
 args.cuda = not args.no_cuda and torch.cuda.is_available()
@@ -156,7 +158,7 @@ def generate_latent_traversal(latent):
     sample = model.decode(sample).cpu()
 
     save_image(sample.view(160, 1, 28, 28), 
-        '/Users/dingfan/FinalYearProject/BETA_VAE/Results/traversal_total' + str() + '.png')
+        '/Users/dingfan/FinalYearProject/BETA_VAE/Results/traversal_total_' + str(args.beta) + '.png')
 
 for epoch in range(1, args.epochs+1):
     train(epoch)
