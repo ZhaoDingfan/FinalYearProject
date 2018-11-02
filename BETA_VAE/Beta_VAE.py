@@ -20,8 +20,8 @@ from torchvision.utils import save_image
 parser = argparse.ArgumentParser(description='VAE Implementation')
 parser.add_argument('--batch-size', type=int, default=128, metavar='N',
                     help='input batch size for training (default: 128)')
-parser.add_argument('--epochs', type=int, default=10, metavar='N',
-                    help='number of epochs to train (default: 100)')
+parser.add_argument('--epochs', type=int, default=400, metavar='N',
+                    help='number of epochs to train (default: 10)')
 parser.add_argument('--no-cuda', action='store_true', default=False,
                     help='enables CUDA training')
 parser.add_argument('--seed', type=int, default=1, metavar='S',
@@ -144,11 +144,9 @@ def test(epoch):
 
 # function to generate the latent traversal
 def generate_latent_traversal(latent):
-    
     sample = torch.randn(160, 20)
     for dimension in range(20):
         val = -3
-        
         for row in range(8):
             new_row = latent[row].clone()
             new_row[dimension] = val
@@ -158,7 +156,7 @@ def generate_latent_traversal(latent):
     sample = model.decode(sample).cpu()
 
     save_image(sample.view(160, 1, 28, 28), 
-        '/Users/dingfan/FinalYearProject/BETA_VAE/Results/traversal_total_' + str(args.beta) + '.png')
+        '/Users/dingfan/FinalYearProject/BETA_VAE/Results/traversal_beta_' + str(args.beta) + '_epoch_' + str(args.epochs)+'.png')
 
 for epoch in range(1, args.epochs+1):
     train(epoch)
