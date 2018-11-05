@@ -11,17 +11,6 @@ class VAEInput(Dataset):
         data_files = os.listdir(data_folder)
         data_filenames = {}
         
-        # for data_file in data_files:
-        #     splitted = data_file.split('_')
-        #     if splitted[1] == mode + '.pt':
-        #         data_filenames[splitted[0]] = data_file
-        
-        # self.drawings = []
-        # for category, file_name in data_filenames.items():
-        #     drawings = torch.load(os.path.join(data_folder, file_name))
-        #     for drawing in drawings:
-        #         self.drawings.append((drawing, category))
-        
         for data_file in data_files:
             splitted = data_file.split('_')
             if splitted[1] == mode:
